@@ -58,13 +58,14 @@ if ($method === 'POST' && $action === 'registro') {
         exit;
     }
 
-    $stmt = $conn->prepare('INSERT INTO usuarios (nome, email, senha) VALUES (?, ?, ?)');
+    $stmt = $conn->prepare('INSERT INTO usuarios (nome, email, senha) VALUES (?, ?, ?) RETURNING id');
     $stmt->execute([$data->nome, $data->email, $data->senha]);
+    $usuarioId = $stmt->fetchColumn();
 
     echo json_encode([
         'message' => 'Conta criada com sucesso',
         'usuario' => [
-            'id' => $conn->lastInsertId(),
+            'id' => $usuarioId,
             'nome' => $data->nome,
             'email' => $data->email
         ]

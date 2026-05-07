@@ -1,11 +1,12 @@
 <?php
-$databaseUrl = getenv('DATABASE_URL') ?: getenv('MYSQL_URL') ?: getenv('MYSQL_PUBLIC_URL') ?: '';
+$databaseUrl = getenv('DATABASE_URL') ?: getenv('POSTGRES_URL') ?: getenv('POSTGRES_PUBLIC_URL') ?: '';
 
-$host = getenv('DB_HOST') ?: getenv('MYSQLHOST') ?: 'db';
-$db   = getenv('DB_NAME') ?: getenv('MYSQLDATABASE') ?: 'estudantes_db';
-$user = getenv('DB_USER') ?: getenv('MYSQLUSER') ?: 'root';
-$pass = getenv('DB_PASSWORD') ?: getenv('MYSQLPASSWORD') ?: 'root';
-$port = getenv('DB_PORT') ?: getenv('MYSQLPORT') ?: '3306';
+$host = getenv('DB_HOST') ?: getenv('PGHOST') ?: 'db';
+$db   = getenv('DB_NAME') ?: getenv('PGDATABASE') ?: 'estudantes_db';
+$user = getenv('DB_USER') ?: getenv('PGUSER') ?: 'postgres';
+$pass = getenv('DB_PASSWORD') ?: getenv('PGPASSWORD') ?: 'postgres';
+$port = getenv('DB_PORT') ?: getenv('PGPORT') ?: '5432';
+$sslmode = getenv('DB_SSLMODE') ?: getenv('PGSSLMODE') ?: '';
 
 if ($databaseUrl) {
     $url = parse_url($databaseUrl);
@@ -16,6 +17,11 @@ if ($databaseUrl) {
         $user = isset($url['user']) ? urldecode($url['user']) : $user;
         $pass = isset($url['pass']) ? urldecode($url['pass']) : $pass;
         $port = $url['port'] ?? $port;
+
+        if (isset($url['query'])) {
+            parse_str($url['query'], $query);
+            $sslmode = $query['sslmode'] ?? $sslmode;
+        }
     }
 }
 
@@ -24,8 +30,13 @@ try {
         throw new PDOException("Host privado '$host' nao e acessivel fora da rede interna do provedor. Use o host publico do banco de dados.");
     }
 
+    $dsn = "pgsql:host=$host;port=$port;dbname=$db";
+    if ($sslmode) {
+        $dsn .= ";sslmode=$sslmode";
+    }
+
     $conn = new PDO(
-        "mysql:host=$host;port=$port;dbname=$db;charset=utf8mb4",
+        $dsn,
         $user,
         $pass
     );
@@ -33,7 +44,7 @@ try {
 
     $conn->exec("
         CREATE TABLE IF NOT EXISTS estudantes (
-            id INT AUTO_INCREMENT PRIMARY KEY,
+            id SERIAL PRIMARY KEY,
             nome VARCHAR(100) NOT NULL,
             numero VARCHAR(50) NOT NULL,
             curso VARCHAR(100) NOT NULL,
@@ -43,7 +54,7 @@ try {
 
     $conn->exec("
         CREATE TABLE IF NOT EXISTS usuarios (
-            id INT AUTO_INCREMENT PRIMARY KEY,
+            id SERIAL PRIMARY KEY,
             nome VARCHAR(100) NOT NULL,
             email VARCHAR(120) NOT NULL UNIQUE,
             senha VARCHAR(120) NOT NULL,
