@@ -14,6 +14,10 @@ if ($method === 'OPTIONS') {
 
 $action = $_GET['acao'] ?? null;
 
+function senhaValida($senha) {
+    return is_string($senha) && preg_match('/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,}$/', $senha);
+}
+
 if ($method === 'POST' && $action === 'login') {
     $data = json_decode(file_get_contents('php://input'));
 
@@ -46,6 +50,12 @@ if ($method === 'POST' && $action === 'registro') {
     if (!$data || empty($data->nome) || empty($data->email) || empty($data->senha)) {
         http_response_code(400);
         echo json_encode(['message' => 'Nome, email e senha sao obrigatorios']);
+        exit;
+    }
+
+    if (!senhaValida($data->senha)) {
+        http_response_code(400);
+        echo json_encode(['message' => 'A senha deve ter no minimo 6 caracteres, com letras e numeros']);
         exit;
     }
 
